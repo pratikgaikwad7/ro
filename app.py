@@ -10,11 +10,19 @@ from routes.admin import admin_bp
 from routes.evaluations import evaluations_bp
 from routes.user_dashboard import user_dashboard_bp
 
+# Import DB initializers
+from models.student_model import init_db
+from models.user_model import init_user_db
+
 load_dotenv()
 
 def create_app():
     app = Flask(__name__)
     app.secret_key = os.getenv('SECRET_KEY')
+
+    # Initialize database tables
+    init_db()
+    init_user_db()
 
     # Register Blueprints
     app.register_blueprint(students_bp)
