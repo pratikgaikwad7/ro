@@ -1,11 +1,8 @@
 from flask import Blueprint, render_template, request, jsonify, session
 import pandas as pd
-from models.student_model import get_all_students, add_student, update_student, delete_student, init_db, get_filter_options
+from models.student_model import get_all_students, add_student, update_student, delete_student, get_filter_options
 
 students_bp = Blueprint('students', __name__)
-
-# Initialize DB table when this route file is loaded
-init_db()
 
 @students_bp.route('/students')
 def index():
