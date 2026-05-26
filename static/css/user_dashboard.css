@@ -1,0 +1,170 @@
+/* user_dashboard.css */
+
+/* Base & Scrollbar */
+body { 
+    font-family: 'Inter', sans-serif; 
+    background-color: #f1f5f9; 
+    /* 
+       Fluid Typography: 
+       Minimum 12px, Preferred 1.5% of viewport width, Maximum 16px.
+       This ensures text shrinks on smaller laptops automatically.
+    */
+    font-size: clamp(0.75rem, 1.5vw, 1rem); 
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; } /* Thinner scrollbars */
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ============================================
+   HEADER + STRIP
+   ============================================ */
+
+.navbar-header {
+    border-bottom: 1px solid #e2e8f0;
+    background-color: #ffffff;
+}
+
+.sticky-top-strip {
+    position: relative; 
+    z-index: 20;
+    border-bottom: 1px solid #e2e8f0;
+    background-color: #ffffff;
+}
+
+/* ============================================
+   SIDEBAR & LAYOUT
+   ============================================ */
+
+.filter-sidebar {
+    width: 0;
+    min-width: 0;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-x: hidden;
+    border-right: 1px solid transparent;
+    box-shadow: none;
+}
+
+.filter-sidebar.open {
+    width: clamp(280px, 85vw, 360px); /* Dynamic width */
+    min-width: 280px;
+    border-right-color: #e2e8f0;
+    box-shadow: 4px 0 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-content {
+    width: 100%;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.filter-sidebar.open .sidebar-content { opacity: 1; }
+
+/* Active Filter Tags */
+.active-filter-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem; /* 12px - smaller for compact look */
+    font-weight: 600;
+    background-color: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+    box-shadow: none;
+}
+
+/* Corporate Card Style */
+.corp-card {
+    background: white;
+    border-radius: 0.5rem; /* Slightly smaller radius */
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    /* Fluid padding inside cards */
+    padding: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+.corp-card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    transform: translateY(-2px);
+}
+
+/* Chart Container */
+.chart-container {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    min-height: 200px;
+}
+
+/* Input Field Styling */
+.input-field {
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px 10px;
+    /* Responsive font size for inputs */
+    font-size: clamp(0.75rem, 1.5vw, 0.9375rem); 
+    color: #334155;
+    background-color: #f8fafc;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.input-field:focus {
+    border-color: #6366f1;
+    background-color: white;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+/* Section Headers in Sidebar */
+h4.text-slate-400 {
+    letter-spacing: 0.05em;
+    color: #94a3b8 !important;
+    font-size: 0.7rem; /* Smaller header for sidebar */
+}
+
+/* Dropdown Menu Styling */
+.dropdown-menu {
+    animation: dropdownFade 0.15s ease-out;
+}
+
+@keyframes dropdownFade {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.filter-checkbox {
+    cursor: pointer;
+    width: 14px;
+    height: 14px;
+}
+
+/* ============================================
+   RESPONSIVE MODAL FIX
+   ============================================ */
+
+#studentModal .overflow-y-auto {
+    -webkit-overflow-scrolling: touch; 
+}
+
+/* Responsive Sidebar Mobile */
+@media (max-width: 768px) {
+    .filter-sidebar.open {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        z-index: 40;
+        width: 100%;
+        min-width: 100%;
+    }
+    
+    .sidebar-content {
+        width: 100%;
+    }
+}

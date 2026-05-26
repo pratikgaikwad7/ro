@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainee Evaluation Sheet | LAKSHYA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+        .score-input { transition: all 0.2s ease; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+        .score-input:focus { transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.1); border-color: #4f46e5; }
+        header { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .hidden { display: none !important; }
+        .total-row { background: repeating-linear-gradient(45deg, #1e293b, #1e293b 10px, #334155 10px, #334155 20px); }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-30 bg-white/95 border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex items-center gap-4">
+                    <a href="/evaluations" class="group flex items-center text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors">
+                        <div class="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center mr-3 group-hover:bg-indigo-50 border border-slate-200 group-hover:border-indigo-200">
+                            <i class="fas fa-arrow-left text-slate-400 group-hover:text-indigo-600"></i>
+                        </div>
+                        <span class="hidden sm:inline font-semibold">Back to List</span>
+                    </a>
+                    <div class="h-8 w-px bg-slate-200 hidden md:block"></div>
+                    
+                    <!-- Semester Filter Section -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center shadow-md">
+                            <i class="fas fa-file-signature text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold text-slate-900 tracking-tight">Evaluation Sheet</h1>
+                            <div class="flex items-center gap-2">
+                                <!-- Semester Dropdown -->
+                                <form action="" method="GET" class="flex items-center gap-2">
+                                    <label class="text-xs text-slate-500 font-medium uppercase">View:</label>
+                                    <select name="semester" onchange="this.form.submit()" class="text-xs font-bold bg-slate-100 border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        {% for sem in all_semesters %}
+                                            <option value="{{ sem.semester }}" {% if sem.semester == current_semester %}selected{% endif %}>
+                                                Sem {{ sem.semester }} ({{ sem.semester_status|capitalize }})
+                                            </option>
+                                        {% else %}
+                                            <option value="{{ current_semester }}">Sem {{ current_semester }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+
+                                <!-- Status Badge Logic -->
+                                <!-- Priority 1: Student Status -->
+                                {% if student_status == 'dropped' %}
+                                    <span class="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[10px] font-bold">DROPPED</span>
+                                {% elif student_status == 'completed' %}
+                                    <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">COMPLETED</span>
+                                {% else %}
+                                    <!-- Priority 2: Semester Status (If Student is Active) -->
+                                    {% if is_latest_semester and status == 'ongoing' %}
+                                        <span class="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded text-[10px] font-bold">ONGOING</span>
+                                    {% elif status == 'completed' %}
+                                        <span class="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[10px] font-bold">SEM COMPLETED</span>
+                                    {% else %}
+                                         <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold">VIEWING</span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    
+                    <!-- ACTION BUTTONS LOGIC -->
+
+                    <!-- Case 1: Student is DROPPED -->
+                    {% if student_status == 'dropped' %}
+                        <button disabled class="bg-red-200 text-red-800 px-4 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2 text-sm cursor-not-allowed">
+                            <i class="fas fa-ban"></i> Dropped – Evaluation Locked
+                        </button>
+                    
+                    <!-- Case 2: Student is COMPLETED -->
+                    {% elif student_status == 'completed' %}
+                        <button disabled class="bg-blue-200 text-blue-800 px-4 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2 text-sm cursor-not-allowed">
+                            <i class="fas fa-check-circle"></i> Completed – Evaluation Locked
+                        </button>
+
+                    <!-- Case 3: Student is ACTIVE -->
+                    {% elif student_status == 'active' %}
+                        
+                        <!-- If viewing latest ongoing semester -->
+                        {% if is_latest_semester and status == 'ongoing' %}
+                            
+                            <!-- Logic for Sem 1-6: Promote Button -->
+                            {% if current_semester < 7 %}
+                                <form action="/evaluations/{{ student.id }}/promote" method="POST" onsubmit="return confirm('Are you sure? This will finalize Semester {{ current_semester }} and start Semester {{ current_semester + 1 }}.');">
+                                    <button type="submit" class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2 text-sm">
+                                        <i class="fas fa-arrow-circle-right"></i> Promote to Sem {{ current_semester + 1 }}
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                            <!-- Logic for Sem 7: End 7th Semester Button -->
+                            {% if current_semester == 7 %}
+                                <form action="/evaluations/{{ student.id }}/end-semester-seven" method="POST" onsubmit="return confirm('Confirm End of Semester 7? This will finalize the semester. The student status will change to Completed based on their End Date.');">
+                                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2 text-sm">
+                                        <i class="fas fa-flag-checkered"></i> End 7th Semester
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                        {% endif %}
+                        
+                        <!-- Evaluate Button (Always available for active students to view/edit) -->
+                         <button onclick="toggleEditMode()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2 text-sm">
+                            <i class="fas fa-clipboard-check"></i> Evaluate
+                        </button>
+                        
+                    {% endif %}
+
+                    <!-- Student Profile Pill -->
+                    <div onclick="openStudentModal()" class="cursor-pointer group flex items-center bg-white border border-slate-200 rounded-full py-1.5 pl-1.5 pr-4 shadow-sm hover:border-indigo-300 hover:shadow-md transition">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs mr-2 shadow-inner">
+                            {{ student.employee_name[0]|upper }}
+                        </div>
+                        <div class="text-left">
+                            <h2 class="text-sm font-semibold text-slate-800 leading-none">{{ student.employee_name }}</h2>
+                            <p class="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1"><i class="fas fa-id-badge text-[8px]"></i> {{ student.ticket_no }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        <!-- 1. FINAL EVALUATION TABLE -->
+        <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
+                <i class="fas fa-calculator text-slate-400"></i>
+                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Final Evaluation Summary (Sem {{ current_semester }})</h3>
+            </div>
+
+            <table class="min-w-full text-sm">
+              <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Assessment Area</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Frequency</th>
+                    <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Marks</th>
+                    <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Weight</th>
+                    <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Final Score</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-4 font-medium text-slate-700 whitespace-nowrap">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded bg-amber-50 flex items-center justify-center">
+                                <i class="fas fa-chalkboard-teacher text-amber-600"></i>
+                            </div>
+                            Training
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-slate-500 text-xs font-medium uppercase">Every Training</td>
+                    <td class="px-6 py-4 text-center font-bold text-slate-800">{{ final_eval.training_marks or 0 }}</td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs font-bold">20</span>
+                    </td>
+                    <td class="px-6 py-4 text-center font-bold text-indigo-600 text-base">{{ final_eval.training_total or 0 }}</td>
+                </tr>
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-4 font-medium text-slate-700 whitespace-nowrap">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded bg-blue-50 flex items-center justify-center">
+                                <i class="fas fa-industry text-blue-600"></i>
+                            </div>
+                            OJT
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-slate-500 text-xs font-medium uppercase">Every Rotation</td>
+                    <td class="px-6 py-4 text-center font-bold text-slate-800">{{ final_eval.ojt_marks or 0 }}</td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs font-bold">50</span>
+                    </td>
+                    <td class="px-6 py-4 text-center font-bold text-indigo-600 text-base">{{ final_eval.ojt_total or 0 }}</td>
+                </tr>
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-4 font-medium text-slate-700 whitespace-nowrap">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded bg-purple-50 flex items-center justify-center">
+                                <i class="fas fa-university text-purple-600"></i>
+                            </div>
+                            BITS
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-slate-500 text-xs font-medium uppercase">Every Semester</td>
+                    <td class="px-6 py-4 text-center font-bold text-slate-800">{{ final_eval.bits_marks or 0 }}</td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs font-bold">30</span>
+                    </td>
+                    <td class="px-6 py-4 text-center font-bold text-indigo-600 text-base">{{ final_eval.bits_total or 0 }}</td>
+                </tr>
+                <tr class="total-row text-white">
+                    <td colspan="4" class="px-6 py-5 text-right font-bold text-base tracking-wide flex items-center justify-end gap-2">
+                        <i class="fas fa-trophy"></i> Grand Total
+                    </td>
+                    <td class="px-6 py-5 text-center text-xl font-extrabold">{{ final_eval.grand_total or 0 }}</td>
+                </tr>
+              </tbody>  
+            </table>
+        </div>
+
+        <!-- VIEW MODE -->
+        <div id="viewMode">
+            <div class="bg-white shadow-sm rounded-xl border border-slate-200 overflow-hidden">
+                <div class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-clipboard-list text-slate-400 mr-2"></i>
+                        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Detailed Performance Record</h3>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1">
+                        <i class="fas fa-eye"></i> View Mode
+                    </span>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        
+                        <!-- Academic Data -->
+                        <div class="lg:col-span-1 space-y-6">
+                            <div class="flex items-center gap-2 mb-4">
+                                <i class="fas fa-graduation-cap text-indigo-500"></i>
+                                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Academic Scores</h4>
+                            </div>
+                            <div class="relative bg-gradient-to-br from-indigo-500 to-indigo-600 p-6 rounded-xl shadow-lg text-white overflow-hidden">
+                                <div class="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8"></div>
+                                <div class="relative">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-xs font-bold uppercase text-indigo-100">Training Marks</span>
+                                        <i class="fas fa-certificate text-indigo-200"></i>
+                                    </div>
+                                    <div class="text-4xl font-extrabold">{{ student.training_marks or 0 }}</div>
+                                    <div class="text-xs text-indigo-200 mt-1 opacity-80">Out of 100</div>
+                                </div>
+                            </div>
+                            <div class="relative bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-xl shadow-lg text-white overflow-hidden">
+                                <div class="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8"></div>
+                                <div class="relative">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-xs font-bold uppercase text-purple-100">BITS CGPA</span>
+                                        <i class="fas fa-award text-purple-200"></i>
+                                    </div>
+                                    <div class="text-4xl font-extrabold">{{ student.bits_cgpa or 0.0 }}</div>
+                                    <div class="text-xs text-purple-200 mt-1 opacity-80">Cumulative GPA</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Performance Metrics -->
+                        <div class="lg:col-span-2 space-y-6">
+                            <div class="flex items-center gap-2 mb-4">
+                                <i class="fas fa-chart-bar text-indigo-500"></i>
+                                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Performance Metrics (Out of 10)</h4>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex justify-between items-center group hover:bg-white hover:border-slate-200 transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                            <i class="fas fa-calendar-check text-slate-500 group-hover:text-indigo-600 transition text-xs"></i>
+                                        </div>
+                                        <span class="text-sm text-slate-700 font-medium">Attendance</span>
+                                    </div>
+                                    <span class="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-100 text-sm">{{ student.score_attendance or 0 }}</span>
+                                </div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex justify-between items-center group hover:bg-white hover:border-slate-200 transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                            <i class="fas fa-lightbulb text-slate-500 group-hover:text-amber-500 transition text-xs"></i>
+                                        </div>
+                                        <span class="text-sm text-slate-700 font-medium">Suggestions/Ideas</span>
+                                    </div>
+                                    <span class="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-100 text-sm">{{ student.score_suggestions or 0 }}</span>
+                                </div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex justify-between items-center group hover:bg-white hover:border-slate-200 transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                            <i class="fas fa-project-diagram text-slate-500 group-hover:text-blue-600 transition text-xs"></i>
+                                        </div>
+                                        <span class="text-sm text-slate-700 font-medium">Projects</span>
+                                    </div>
+                                    <span class="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-100 text-sm">{{ student.score_projects or 0 }}</span>
+                                </div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex justify-between items-center group hover:bg-white hover:border-slate-200 transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                            <i class="fas fa-trophy text-slate-500 group-hover:text-yellow-600 transition text-xs"></i>
+                                        </div>
+                                        <span class="text-sm text-slate-700 font-medium">Recognitions</span>
+                                    </div>
+                                    <span class="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-100 text-sm">{{ student.score_recognitions or 0 }}</span>
+                                </div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex justify-between items-center group hover:bg-white hover:border-slate-200 transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                            <i class="fas fa-hard-hat text-slate-500 group-hover:text-orange-600 transition text-xs"></i>
+                                        </div>
+                                        <span class="text-sm text-slate-700 font-medium">Safety</span>
+                                    </div>
+                                    <span class="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-100 text-sm">{{ student.score_safety or 0 }}</span>
+                                </div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex justify-between items-center group hover:bg-white hover:border-slate-200 transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                            <i class="fas fa-user-check text-slate-500 group-hover:text-green-600 transition text-xs"></i>
+                                        </div>
+                                        <span class="text-sm text-slate-700 font-medium">Work Discipline</span>
+                                    </div>
+                                    <span class="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-100 text-sm">{{ student.score_discipline or 0 }}</span>
+                                </div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex justify-between items-center group hover:bg-white hover:border-slate-200 transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                            <i class="fas fa-user-graduate text-slate-500 group-hover:text-purple-600 transition text-xs"></i>
+                                        </div>
+                                        <span class="text-sm text-slate-700 font-medium">BITS Attendance</span>
+                                    </div>
+                                    <span class="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-100 text-sm">{{ student.score_bits_attendance or 0 }}</span>
+                                </div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex justify-between items-center group hover:bg-white hover:border-slate-200 transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                            <i class="fas fa-tools text-slate-500 group-hover:text-slate-700 transition text-xs"></i>
+                                        </div>
+                                        <span class="text-sm text-slate-700 font-medium">Equipment Ownership</span>
+                                    </div>
+                                    <span class="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-100 text-sm">{{ student.score_equipment or 0 }}</span>
+                                </div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex justify-between items-center group hover:bg-white hover:border-slate-200 transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                            <i class="fas fa-tasks text-slate-500 group-hover:text-blue-500 transition text-xs"></i>
+                                        </div>
+                                        <span class="text-sm text-slate-700 font-medium">Shop Task Completion</span>
+                                    </div>
+                                    <span class="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-100 text-sm">{{ student.score_shop_task or 0 }}</span>
+                                </div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex justify-between items-center group hover:bg-white hover:border-slate-200 transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                            <i class="fas fa-chart-line text-slate-500 group-hover:text-red-500 transition text-xs"></i>
+                                        </div>
+                                        <span class="text-sm text-slate-700 font-medium">Function Understanding</span>
+                                    </div>
+                                    <span class="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-100 text-sm">{{ student.score_function_output or 0 }}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Total -->
+                            <div class="bg-slate-800 text-white p-4 rounded-lg flex justify-between items-center shadow-lg mt-4">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-sum text-slate-300"></i>
+                                    <span class="text-sm font-bold uppercase tracking-wider">Total Score</span>
+                                </div>
+                                <span class="text-2xl font-bold">
+                                    {{ (student.score_attendance or 0) + (student.score_suggestions or 0) + (student.score_projects or 0) + (student.score_recognitions or 0) + (student.score_safety or 0) + (student.score_discipline or 0) + (student.score_bits_attendance or 0) + (student.score_equipment or 0) + (student.score_shop_task or 0) + (student.score_function_output or 0) }} 
+                                    <span class="text-sm font-normal text-slate-400">/ 100</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+      <!-- EDIT MODE -->
+      <form id="editForm" method="POST" action="/evaluations/{{ student.id }}?semester={{ current_semester }}" onsubmit="return confirmSave()" class="hidden">
+        <input type="hidden" name="semester" value="{{ current_semester }}">
+
+        <div class="bg-white shadow-xl rounded-xl border border-slate-200 overflow-visible">
+            <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center gap-3">
+                <i class="fas fa-edit text-indigo-500"></i>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Edit Evaluation</h3>
+                    <p class="text-xs text-slate-500">Update scores for Semester {{ current_semester }}</p>
+                </div>
+            </div>
+            <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="flex items-center gap-2 border-b border-slate-200 pb-2 mb-4">
+                        <i class="fas fa-graduation-cap text-slate-400"></i>
+                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Academic Marks</h4>
+                    </div>
+                    <div class="space-y-4">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-2">Training Marks</label>
+                        <div class="relative">
+                            <input type="number" name="training_marks" step="0.01" value="{{ student.training_marks or 0 }}"
+                                class="w-full text-lg font-bold text-slate-800 bg-white border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                                {% if student_status != 'active' or status != 'ongoing' %}disabled{% endif %}>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <span class="text-slate-400 text-sm font-medium">/100</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-2">BITS CGPA</label>
+                        <div class="relative">
+                            <input type="number" name="bits_cgpa" step="0.01" min="0" max="10" value="{{ student.bits_cgpa or 0.0 }}"
+                                class="w-full text-lg font-bold text-slate-800 bg-white border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                                {% if student_status != 'active' or status != 'ongoing' %}disabled{% endif %}>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <span class="text-slate-400 text-sm font-medium">/10</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if student_status == 'active' and status == 'ongoing' %}
+                    <div class="pt-4 border-t border-slate-200 space-y-3">
+                         <button type="submit" class="w-full px-6 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 shadow-md transition flex items-center justify-center gap-2">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                        <button type="button" onclick="toggleEditMode()" class="w-full px-4 py-2 bg-white border border-slate-300 text-slate-600 font-medium rounded-lg hover:bg-slate-50 transition">
+                            Cancel
+                        </button>
+                    </div>
+                    {% else %}
+                        <div class="pt-4 border-t border-slate-200">
+                             <button type="button" onclick="toggleEditMode()" class="w-full px-4 py-2 bg-white border border-slate-300 text-slate-600 font-medium rounded-lg hover:bg-slate-50 transition">
+                                Close View
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="lg:col-span-8">
+                    <div class="flex items-center gap-2 border-b border-slate-200 pb-2 mb-4">
+                        <i class="fas fa-list-ol text-slate-400"></i>
+                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Performance Metrics</h4>
+                    </div>
+                    <div class="overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-sm">
+                        <table class="min-w-full">
+                            <thead class="bg-slate-50 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 w-8">#</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-slate-500">Parameter</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 w-24">Score (0-10)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% set metrics = [
+                                    ('attendance', 'Attendance', 'fa-calendar-check'),
+                                    ('suggestions', 'Suggestions/Ideas', 'fa-lightbulb'),
+                                    ('projects', 'Projects', 'fa-project-diagram'),
+                                    ('recognitions', 'Recognitions/Appreciations', 'fa-trophy'),
+                                    ('safety', 'Safety', 'fa-hard-hat'),
+                                    ('discipline', 'Work Discipline', 'fa-user-check'),
+                                    ('bits_attendance', 'BITS Class attendance', 'fa-user-graduate'),
+                                    ('equipment', 'Equipment ownership', 'fa-tools'),
+                                    ('shop_task', 'Shop Task completion', 'fa-tasks'),
+                                    ('function_output', 'Current function understanding', 'fa-chart-line')
+                                ] %}
+                                {% for key, label, icon in metrics %}
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-4 py-2 text-slate-400 text-xs font-mono">{{ loop.index }}</td>
+                                    <td class="px-4 py-2 text-sm text-slate-700 font-medium flex items-center gap-2 whitespace-nowrap">
+                                        <i class="fas {{ icon }} text-slate-300 w-4 text-center"></i>
+                                        {{ label }}
+                                    </td>
+                                    <td class="px-4 py-2 text-center">
+                                        <input type="number"
+                                            name="score_{{ key }}"
+                                            value="{{ student['score_' + key] or 0 }}"
+                                            min="0"
+                                            max="10"
+                                            onchange="calculateTotal()"
+                                            class="score-input w-16 h-9 text-center border border-slate-300 rounded-md font-semibold text-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" 
+                                            {% if student_status != 'active' or status != 'ongoing' %}disabled{% endif %}>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="bg-slate-50 border-t border-slate-200">
+                                <tr>
+                                    <td colspan="2" class="px-4 py-3 text-right font-bold text-sm text-slate-600 uppercase tracking-wide">Total</td>
+                                    <td class="px-4 py-3 text-center font-extrabold text-xl text-indigo-700 bg-white"><span id="totalScoreDisplay">0</span></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    </main>
+
+    <!-- STUDENT PROFILE MODAL -->
+    <div id="studentModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-60 transition-opacity" onclick="closeStudentModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full border border-slate-200">
+                <div class="bg-slate-800 px-6 py-5 flex justify-between items-center relative">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-full bg-white text-slate-800 flex items-center justify-center font-bold text-xl shadow-lg border-4 border-white/20">
+                            {{ student.employee_name[0]|upper }}
+                        </div>
+                        <div class="text-white text-left">
+                            <h3 class="text-xl font-bold leading-none" id="modal-title">{{ student.employee_name }}</h3>
+                            <p class="text-slate-300 text-xs mt-1 font-medium flex items-center gap-2">
+                                <span>{{ student.department or 'Unknown Dept' }}</span> 
+                                <span class="w-1 h-1 rounded-full bg-slate-500"></span> 
+                                <span>{{ student.ticket_no }}</span>
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeStudentModal()" class="text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition focus:outline-none">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+
+                <div class="px-6 py-6 bg-slate-50 border-t border-slate-200">
+                    
+                    <!-- CURRENT SEMESTER STATUS SECTION -->
+                    <div class="mb-6 p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                                    <i class="fas fa-graduation-cap text-indigo-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Current Academic Status</p>
+                                    <h4 class="text-lg font-bold text-slate-800">Semester {{ active_semester }}</h4>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                {% if student_status == 'dropped' %}
+                                     <span class="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">DROPPED</span>
+                                {% elif student_status == 'completed' %}
+                                     <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">COMPLETED</span>
+                                {% else %}
+                                     <span class="px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">ACTIVE</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8">
+                        <div class="space-y-6 md:col-span-1 lg:col-span-3 border-b border-slate-200 pb-4 mb-2">
+                            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <i class="fas fa-user-circle text-slate-400"></i> Personal Information
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-id-card mr-1 text-slate-300"></i> Ticket No</label>
+                                    <div class="text-sm font-semibold text-slate-800">{{ student.ticket_no }}</div>
+                                </div>
+                                <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-venus-mars mr-1 text-slate-300"></i> Gender</label>
+                                    <div class="text-sm font-semibold text-slate-800 capitalize">{{ student.gender }}</div>
+                                </div>
+                                <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-mobile-alt mr-1 text-slate-300"></i> Mobile</label>
+                                    <div class="text-sm font-semibold text-slate-800">{{ student.mobile_no }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6 md:col-span-1 lg:col-span-3 border-b border-slate-200 pb-4 mb-2">
+                            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <i class="fas fa-map-marker-alt text-slate-400"></i> Placement Details
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-industry mr-1 text-slate-300"></i> Plant Location</label>
+                                    <div class="text-sm font-semibold text-slate-800">{{ student.plant_location or 'N/A' }}</div>
+                                </div>
+                                <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-calendar mr-1 text-slate-300"></i> Batch Year</label>
+                                    <div class="text-sm font-semibold text-slate-800">{{ student.batch_year or 'N/A' }}</div>
+                                </div>
+                                <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-hashtag mr-1 text-slate-300"></i> Batch No</label>
+                                    <div class="text-sm font-semibold text-slate-800">{{ student.batch_no or 'N/A' }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase"><i class="fas fa-envelope mr-1"></i> Email Address</label>
+                            <div class="text-sm font-medium text-slate-800 bg-white px-3 py-2 rounded border border-slate-100 shadow-xs truncate">{{ student.email or 'N/A' }}</div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase"><i class="fas fa-graduation-cap mr-1"></i> Diploma Branch</label>
+                            <div class="text-sm font-medium text-slate-800 bg-white px-3 py-2 rounded border border-slate-100 shadow-xs">{{ student.diploma_branch or 'N/A' }}</div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase"><i class="fas fa-building mr-1"></i> Department</label>
+                            <div class="text-sm font-medium text-slate-800 bg-white px-3 py-2 rounded border border-slate-100 shadow-xs">{{ student.department or 'N/A' }}</div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase"><i class="fas fa-user-tie mr-1"></i> Reporting Manager</label>
+                            <div class="text-sm font-medium text-slate-800 bg-white px-3 py-2 rounded border border-slate-100 shadow-xs">{{ student.reporting_manager or 'N/A' }}</div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase"><i class="fas fa-hashtag mr-1"></i> BC No</label>
+                            <div class="text-sm font-medium text-slate-800 bg-white px-3 py-2 rounded border border-slate-100 shadow-xs">{{ student.bc_no or 'N/A' }}</div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase"><i class="fas fa-cogs mr-1"></i> Function</label>
+                            <div class="text-sm font-medium text-slate-800 bg-white px-3 py-2 rounded border border-slate-100 shadow-xs">{{ student.function or 'N/A' }}</div>
+                        </div>
+                        <!-- NEW: BITS Stream -->
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase"><i class="fas fa-stream mr-1"></i> BITS Stream</label>
+                            <div class="text-sm font-medium text-slate-800 bg-white px-3 py-2 rounded border border-slate-100 shadow-xs">{{ student.bits_stream or 'N/A' }}</div>
+                        </div>
+                        <div class="space-y-1 md:col-span-2 lg:col-span-3 mt-2 pt-4 border-t border-slate-200">
+                            <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100 inline-flex items-center gap-3">
+                                <i class="fas fa-calendar-alt text-indigo-400"></i>
+                                <div class="text-left">
+                                    <label class="block text-[10px] font-bold text-indigo-500 uppercase">Date of Joining</label>
+                                    <div class="text-sm font-bold text-indigo-800">{{ student.date_of_joining or 'N/A' }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleEditMode() {
+            const viewMode = document.getElementById('viewMode');
+            const editMode = document.getElementById('editForm');
+            
+            if (viewMode.classList.contains('hidden')) {
+                viewMode.classList.remove('hidden');
+                editMode.classList.add('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                viewMode.classList.add('hidden');
+                editMode.classList.remove('hidden');
+                calculateTotal();
+            }
+        }
+
+        function calculateTotal() {
+            const inputs = document.querySelectorAll('input[type="number"]:not([disabled])'); // Only count enabled inputs
+            let total = 0;
+            inputs.forEach(input => {
+                if(input.name.startsWith('score_')) {
+                    let val = parseFloat(input.value);
+                    if (!isNaN(val)) {
+                        total += val;
+                    }
+                }
+            });
+            document.getElementById('totalScoreDisplay').textContent = total;
+        }
+        
+        document.addEventListener('DOMContentLoaded', calculateTotal);
+
+        function openStudentModal() {
+            document.getElementById('studentModal').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden'); 
+        }
+
+        function closeStudentModal() {
+            document.getElementById('studentModal').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+        
+        function confirmSave() {
+            // Double check if disabled (frontend safety)
+            const disabledInputs = document.querySelectorAll('input:disabled');
+            if (disabledInputs.length > 0) {
+                return confirm("This record is locked. Changes cannot be saved.");
+            }
+            return confirm("Are you sure you want to save these evaluation marks?");
+        }
+    </script>
+</body>
+</html>

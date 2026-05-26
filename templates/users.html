@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Users</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 p-8">
+
+<h1 class="text-3xl font-bold mb-6">Manage Users</h1>
+
+<!-- Add User Form -->
+<form method="POST" action="/users/add" class="bg-white p-6 rounded shadow mb-8 space-y-4">
+
+    <input type="text" name="username" placeholder="Username"
+    class="border p-2 w-full rounded" required>
+
+    <!-- FIXED: password type -->
+    <input type="password" name="password" placeholder="Password"
+    class="border p-2 w-full rounded" required>
+
+    <!-- Role -->
+    <select name="role" id="roleSelect" class="border p-2 w-full rounded" required>
+        <option value="">Select Role</option>
+        <option>CHRO</option>
+        <option>PMO</option>
+        <option>Corporate Skill Head</option>
+        <option>HR Head</option>
+        <option>Skill Head</option>
+        <option>Admin</option>
+        <option>SDC Coordinator</option>
+    </select>
+
+    <!-- Plant Location (hidden by default) -->
+    <select name="plant_location" id="plantLocationBox"
+        class="border p-2 w-full rounded hidden">
+        <option value="">Select Plant Location</option>
+ 
+<option value="Pune_CV">Pune CV</option>
+<option value="Dharwad_CV">Dharwad CV</option>
+<option value="Lucknow_CV">Lucknow CV</option>
+<option value="Pantnagar_CV">Pantnagar CV</option>
+<option value="Jamshedpur_CV">Jamshedpur CV</option>
+
+<option value="Pune_PV">Pune PV</option>
+<option value="Sanand_PV1">Sanand PV 1</option>
+<option value="Sanand_PV2">Sanand PV 2</option>
+    </select>
+
+    <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+        Add User
+    </button>
+
+</form>
+
+
+<!-- Users Table -->
+<table class="w-full bg-white rounded shadow">
+
+<tr class="bg-gray-200 text-sm uppercase text-gray-600">
+    <th class="p-3">ID</th>
+    <th class="p-3">Username</th>
+    <th class="p-3">Role</th>
+    <th class="p-3">Plant Location</th>
+    <th class="p-3">Action</th>
+</tr>
+
+{% for user in users %}
+<tr class="border-t text-center text-sm">
+    <td class="p-3">{{ user.id }}</td>
+    <td class="p-3 font-medium text-gray-800">{{ user.username }}</td>
+    <td class="p-3">{{ user.role }}</td>
+    <td class="p-3">{{ user.plant_location or '-' }}</td>
+
+    <td class="p-3">
+        <!-- FIXED: POST delete -->
+        <form method="POST" action="/users/delete/{{ user.id }}">
+            <button class="text-red-600 hover:underline">
+                Delete
+            </button>
+        </form>
+    </td>
+</tr>
+{% endfor %}
+
+</table>
+
+
+<!-- JS -->
+<script>
+// Role → Plant Logic
+document.addEventListener('DOMContentLoaded', () => {
+
+    const roleSelect = document.getElementById('roleSelect');
+    const plantBox = document.getElementById('plantLocationBox');
+
+    const plantRoles = ['HR Head', 'Skill Head', 'SDC Coordinator'];
+
+    roleSelect.addEventListener('change', function () {
+
+        if (plantRoles.includes(this.value)) {
+            plantBox.classList.remove('hidden');
+            plantBox.required = true;
+        } else {
+            plantBox.classList.add('hidden');
+            plantBox.required = false;
+            plantBox.value = '';
+        }
+
+    });
+
+});
+</script>
+
+</body>
+</html>

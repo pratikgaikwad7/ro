@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LAKSHYA | Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { inter: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe',
+                            300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1',
+                            600: '#4f46e5', 700: '#4338ca', 800: '#3730a3',
+                            900: '#312e81', 950: '#1e1b4b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+        /* ── Left panel subtle depth gradient ── */
+        .left-panel {
+            background:
+                linear-gradient(175deg, #ffffff 0%, #f8fafc 40%, #f1f5f9 100%);
+        }
+        .left-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(circle, #cbd5e1 0.6px, transparent 0.6px);
+            background-size: 24px 24px;
+            opacity: 0.35;
+            pointer-events: none;
+            z-index: 0;
+        }
+        /* Subtle top-edge light bleed */
+        .left-panel::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.15) 50%, transparent 100%);
+            z-index: 1;
+        }
+
+        /* ── Floating decorations ── */
+        @keyframes floatShape {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+        .deco-shape { animation: floatShape 7s ease-in-out infinite; }
+        .deco-shape-2 { animation: floatShape 9s ease-in-out infinite 1.5s; }
+
+        /* ── Input field premium treatment ── */
+        .input-field {
+            background: rgba(248, 250, 252, 0.9);
+            border: 1.5px solid #e2e8f0;
+            box-shadow:
+                0 1px 2px rgba(0,0,0,0.04),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+            transition: all 0.25s ease;
+        }
+        .input-field:hover {
+            border-color: #cbd5e1;
+            background: rgba(255,255,255,0.95);
+            box-shadow:
+                0 2px 4px rgba(0,0,0,0.04),
+                inset 0 1px 0 rgba(255,255,255,0.9);
+        }
+        .input-field:focus {
+            background: #ffffff;
+            border-color: #6366f1;
+            box-shadow:
+                0 0 0 3.5px rgba(99, 102, 241, 0.12),
+                0 0 16px rgba(99, 102, 241, 0.06),
+                0 2px 8px rgba(99, 102, 241, 0.08),
+                inset 0 1px 0 rgba(255,255,255,1);
+        }
+
+        /* ── Sign-in button ── */
+        .btn-signin {
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+            box-shadow:
+                0 1px 2px rgba(0,0,0,0.1),
+                0 4px 12px rgba(79, 70, 229, 0.3),
+                inset 0 1px 0 rgba(255,255,255,0.15);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-signin::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 50%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+        }
+        .btn-signin:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+            transform: translateY(-1px);
+            box-shadow:
+                0 2px 4px rgba(0,0,0,0.1),
+                0 8px 24px rgba(79, 70, 229, 0.35),
+                inset 0 1px 0 rgba(255,255,255,0.18);
+        }
+        .btn-signin:active { transform: translateY(0); box-shadow: 0 1px 3px rgba(79,70,229,0.3), inset 0 1px 0 rgba(255,255,255,0.1); }
+
+        /* ── Right panel: rich multi-stop gradient ── */
+        .right-panel {
+            background:
+                radial-gradient(ellipse 80% 60% at 20% 10%, rgba(99,102,241,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse 70% 50% at 80% 90%, rgba(139,92,246,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 90% 80% at 50% 50%, rgba(30,27,75,0.4) 0%, transparent 70%),
+                linear-gradient(160deg, #0c1222 0%, #141035 25%, #1a1650 45%, #1e293b 70%, #0f172a 100%);
+        }
+
+        /* Film grain */
+        .right-panel::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Vignette for depth */
+        .right-panel-vignette {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 75% 65% at 50% 45%, transparent 40%, rgba(0,0,0,0.35) 100%);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* ── Floating orbs (subtle, not neon) ── */
+        @keyframes floatBlob1 {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.25; }
+            33% { transform: translate(20px, -15px) scale(1.04); opacity: 0.3; }
+            66% { transform: translate(-10px, 10px) scale(0.96); opacity: 0.22; }
+        }
+        @keyframes floatBlob2 {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.2; }
+            33% { transform: translate(-18px, 20px) scale(0.96); opacity: 0.25; }
+            66% { transform: translate(15px, -8px) scale(1.06); opacity: 0.18; }
+        }
+        @keyframes floatBlob3 {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.15; }
+            50% { transform: translate(12px, 15px) scale(1.03); opacity: 0.2; }
+        }
+        .blob-1 { animation: floatBlob1 9s ease-in-out infinite; will-change: transform; }
+        .blob-2 { animation: floatBlob2 11s ease-in-out infinite; will-change: transform; }
+        .blob-3 { animation: floatBlob3 13s ease-in-out infinite; will-change: transform; }
+
+        /* ── Poster card: premium glassmorphism ── */
+        .poster-card-outer {
+            animation: cardFloat 5s ease-in-out infinite;
+            will-change: transform;
+        }
+        @keyframes cardFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        .poster-card-inner {
+            position: relative;
+            border-radius: 1.125rem;
+            overflow: hidden;
+            /* Stronger glass for low-contrast displays */
+            background: rgba(255, 255, 255, 0.07);
+            border: 1.5px solid rgba(255, 255, 255, 0.14);
+            padding: 10px;
+            /* Force GPU layer for consistent blur */
+            -webkit-backdrop-filter: blur(20px) saturate(1.3);
+            backdrop-filter: blur(20px) saturate(1.3);
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            /* Layered shadows for depth */
+            box-shadow:
+                0 0 0 1px rgba(255,255,255,0.04),
+                0 4px 12px rgba(0,0,0,0.3),
+                0 12px 40px rgba(0,0,0,0.35),
+                0 0 50px rgba(99,102,241,0.1),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+        /* Inner edge highlight (top & left) */
+        .poster-card-inner::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.25) 50%, transparent 95%);
+            z-index: 20;
+            pointer-events: none;
+        }
+        .poster-card-inner::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            width: 1px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 40%);
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        /* Glossy reflection on poster image */
+        .poster-gloss {
+            position: absolute;
+            top: 10px; left: 10px; right: 10px;
+            height: 45%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 40%, transparent 100%);
+            border-radius: 0.75rem 0.75rem 0 0;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        /* Poster image sizing */
+        .poster-img {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 0.75rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Poster wrapper: fills remaining space */
+        .poster-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            min-height: 0;
+            padding: 0 2rem;
+            width: 100%;
+        }
+
+        /* Dynamic max-height based on viewport */
+        .poster-card-inner {
+            max-height: calc(100vh - 230px);
+            max-width: calc((100vh - 230px) * 0.776);
+            width: 100%;
+        }
+        @media (min-width: 1600px) {
+            .poster-card-inner { max-width: 500px; }
+        }
+        @media (max-height: 780px) {
+            .poster-card-inner {
+                max-height: calc(100vh - 190px);
+                max-width: calc((100vh - 190px) * 0.776);
+                padding: 8px;
+            }
+        }
+        @media (max-height: 640px) {
+            .poster-card-inner {
+                max-height: calc(100vh - 150px);
+                max-width: calc((100vh - 150px) * 0.776);
+                padding: 6px;
+            }
+        }
+
+        /* ── Logo icon: richer gradient + depth ── */
+        .logo-icon {
+            background: linear-gradient(145deg, #6366f1 0%, #4338ca 50%, #3730a3 100%);
+            box-shadow:
+                0 2px 6px rgba(79,70,229,0.3),
+                0 4px 12px rgba(79,70,229,0.15),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        .logo-icon::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 50%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        /* ── Decorative shapes: slightly more visible ── */
+        .deco-a {
+            background: linear-gradient(135deg, rgba(199,210,254,0.35) 0%, rgba(224,231,255,0.2) 100%);
+            border: 1px solid rgba(199,210,254,0.2);
+        }
+        .deco-b {
+            background: radial-gradient(circle, rgba(238,242,255,0.5) 0%, rgba(224,231,255,0.15) 100%);
+            border: 1px solid rgba(199,210,254,0.15);
+        }
+        .deco-c {
+            background: linear-gradient(135deg, rgba(241,245,249,0.5) 0%, rgba(226,232,240,0.2) 100%);
+            border: 1px solid rgba(203,213,225,0.15);
+        }
+
+        /* ── Heading divider: stronger glow ── */
+        .heading-divider {
+            width: 56px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #818cf8, #6366f1, #818cf8, transparent);
+            border-radius: 4px;
+            box-shadow: 0 0 12px rgba(99,102,241,0.4), 0 0 4px rgba(99,102,241,0.3);
+            margin: 0 auto;
+        }
+
+        /* ── Separator line on left ── */
+        .footer-sep {
+            border-top: 1px solid rgba(226,232,240,0.7);
+            box-shadow: 0 -1px 0 rgba(255,255,255,0.6);
+        }
+
+        /* ── Scrollbar hide ── */
+        ::-webkit-scrollbar { display: none; }
+
+        /* ── Fallback for browsers without backdrop-filter ── */
+        @supports not (backdrop-filter: blur(20px)) {
+            .poster-card-inner {
+                background: rgba(30, 27, 75, 0.85);
+                border-color: rgba(255,255,255,0.1);
+            }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex overflow-hidden">
+
+    <!-- ==================== LEFT SIDE: Login Form (40%) ==================== -->
+    <div class="left-panel w-full lg:w-2/5 flex items-center justify-center p-8 relative overflow-hidden">
+
+        <!-- Decorative background shapes -->
+        <div class="deco-shape deco-a absolute -bottom-14 -left-14 w-52 h-52 rounded-3xl rotate-12 z-0"></div>
+        <div class="deco-shape-2 deco-b absolute -top-8 -right-8 w-36 h-36 rounded-full z-0"></div>
+        <div class="deco-shape deco-c absolute top-1/3 -right-16 w-28 h-28 rounded-2xl -rotate-6 z-0"></div>
+
+        <div class="w-full max-w-md z-10">
+
+            <!-- Logo -->
+            <div class="mb-10">
+                <div class="flex items-center gap-3">
+                    <div class="logo-icon w-11 h-11 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-bullseye text-white text-base relative z-10"></i>
+                    </div>
+                    <span class="text-[22px] font-extrabold text-slate-800 tracking-tight">LAKSHYA</span>
+                </div>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="mb-5 p-3.5 rounded-xl text-sm font-medium flex items-center gap-2.5
+                    {% if category == 'error' %}
+                      bg-red-50 text-red-700 border border-red-200
+                    {% else %}
+                      bg-emerald-50 text-emerald-700 border border-emerald-200
+                    {% endif %}">
+                    <i class="fas {% if category == 'error' %}fa-exclamation-circle text-red-400{% else %}fa-check-circle text-emerald-400{% endif %}"></i>
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <!-- Heading -->
+            <h2 class="text-[28px] font-extrabold text-slate-800 mb-1.5 tracking-tight leading-tight">Welcome back</h2>
+            <p class="text-slate-400 text-[15px] mb-9 leading-relaxed">Please enter your credentials to access your dashboard.</p>
+
+            <!-- Form -->
+            <form method="POST" action="/login" class="space-y-5">
+
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-2 tracking-widest">User ID</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-slate-300 group-focus-within:text-brand-500 transition-colors duration-300"></i>
+                        </div>
+                        <input type="text" name="username" required
+                            class="input-field w-full pl-11 pr-4 py-3.5 rounded-xl text-slate-800 text-[15px] placeholder:text-slate-300 focus:outline-none focus:ring-0"
+                            placeholder="Enter your ID">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-2 tracking-widest">Password</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-slate-300 group-focus-within:text-brand-500 transition-colors duration-300"></i>
+                        </div>
+                        <input type="password" name="password" id="passwordInput" required
+                            class="input-field w-full pl-11 pr-12 py-3.5 rounded-xl text-slate-800 text-[15px] placeholder:text-slate-300 focus:outline-none focus:ring-0"
+                            placeholder="Enter your password">
+                        <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-300 hover:text-brand-500 transition-colors">
+                            <i class="fas fa-eye text-sm" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-signin w-full text-white font-semibold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2.5 text-[15px] mt-2">
+                    <span>Sign In</span>
+                    <i class="fas fa-arrow-right text-sm"></i>
+                </button>
+            </form>
+
+            <div class="mt-8 pt-6 footer-sep">
+                <p class="text-center text-[13px] text-slate-400">
+                    <i class="fas fa-shield-alt text-brand-400 mr-1.5"></i>
+                    Secured enterprise access &middot; Authorized personnel only
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== RIGHT SIDE: Branding + Poster (60%) ==================== -->
+    <div class="right-panel hidden lg:flex lg:w-3/5 relative overflow-hidden flex-col items-center">
+
+        <!-- Vignette overlay -->
+        <div class="right-panel-vignette"></div>
+
+        <!-- Blurred glowing orbs -->
+        <div class="blob-1 absolute -top-20 -left-20 w-72 h-72 bg-brand-600 rounded-full filter blur-[90px] z-0"></div>
+        <div class="blob-2 absolute -bottom-28 -right-28 w-80 h-80 bg-purple-600 rounded-full filter blur-[100px] z-0"></div>
+        <div class="blob-3 absolute top-1/2 left-1/4 w-44 h-44 bg-brand-500 rounded-full filter blur-[70px] z-0"></div>
+        <div class="blob-2 absolute top-12 right-12 w-28 h-28 bg-indigo-400 rounded-full filter blur-[50px] z-0"></div>
+
+        <!-- Heading -->
+        <div class="text-center pt-10 pb-5 flex-shrink-0 relative z-10">
+            <h1 class="text-[38px] font-black text-white mb-3.5 tracking-tight leading-none"
+                style="text-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                LAKSHYA <span class="text-brand-400 font-light">DASHBOARD</span>
+            </h1>
+            <div class="heading-divider"></div>
+        </div>
+
+        <!-- Poster -->
+        <div class="poster-wrapper relative z-10">
+            <div class="poster-card-outer">
+                <div class="poster-card-inner" id="posterCard">
+                    <!-- Glossy reflection -->
+                    <div class="poster-gloss"></div>
+                    <!-- Poster image -->
+                    <img src="static/images/poster.jpeg"
+                         alt="LAKSHYA Dashboard Poster"
+                         class="poster-img"
+                         id="posterImg"
+                         onerror="this.style.display='none'; document.getElementById('posterFallback').style.display='flex';">
+                    <!-- Fallback -->
+                    <div id="posterFallback" style="display:none; min-height:280px;" class="flex flex-col items-center justify-center text-center py-12 px-8">
+                        <div class="w-20 h-20 rounded-2xl flex items-center justify-center mb-5 border border-brand-500/30" style="background:rgba(99,102,241,0.15);">
+                            <i class="fas fa-chart-bar text-4xl text-brand-400"></i>
+                        </div>
+                        <h3 class="text-white font-bold text-xl mb-2">LAKSHYA DASHBOARD</h3>
+                        <p class="text-slate-400 text-sm">Training & Student Evaluation Management System</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom label -->
+        <div class="pb-4 pt-3 flex-shrink-0 relative z-10">
+            <p class="text-[11px] text-slate-400 tracking-[0.18em] uppercase font-medium"
+               style="text-shadow: 0 1px 4px rgba(0,0,0,0.4);">
+                Training & Student Evaluation Management System
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            const input = document.getElementById('passwordInput');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Left panel entrance
+            const leftEl = document.querySelector('.left-panel .z-10');
+            if (leftEl) {
+                leftEl.style.opacity = '0';
+                leftEl.style.transform = 'translateY(14px)';
+                leftEl.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    leftEl.style.opacity = '1';
+                    leftEl.style.transform = 'translateY(0)';
+                }));
+            }
+
+            // Poster card entrance
+            const posterOuter = document.querySelector('.poster-card-outer');
+            if (posterOuter) {
+                posterOuter.style.opacity = '0';
+                posterOuter.style.transform = 'translateY(20px) scale(0.97)';
+                posterOuter.style.transition = 'opacity 0.7s ease 0.15s, transform 0.7s ease 0.15s';
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    posterOuter.style.opacity = '1';
+                    posterOuter.style.transform = 'translateY(0) scale(1)';
+                    // After entrance, re-enable float animation
+                    setTimeout(() => {
+                        posterOuter.style.transition = 'opacity 0.5s ease, transform 0.3s ease';
+                    }, 900);
+                }));
+            }
+        });
+    </script>
+
+</body>
+</html>

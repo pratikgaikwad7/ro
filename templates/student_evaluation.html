@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Evaluations | LAKSHYA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .hidden { display: none !important; }
+        /* Sidebar transition */
+        .sidebar-closed { transform: translateX(-100%); }
+        .sidebar-open { transform: translateX(0); }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased h-screen flex flex-col overflow-hidden">
+
+    <!-- Top Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm h-16 flex-shrink-0">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 h-full flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                
+                <!-- FILTER TOGGLE BUTTON -->
+                <button onclick="toggleSidebar()" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 hover:bg-indigo-100 text-slate-600 hover:text-indigo-700 transition border border-slate-200 hover:border-indigo-300">
+                    <i class="fas fa-sliders-h"></i>
+                    <span class="text-xs font-bold uppercase hidden sm:inline">Filters</span>
+                    {% if filters.status or filters.semester or filters.year or filters.ticket_no %}
+                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                    {% endif %}
+                </button>
+
+                <div class="h-6 w-px bg-slate-200 hidden md:block"></div>
+                
+                <a href="/admin-dashboard" class="group flex items-center text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors">
+                    <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center mr-2 group-hover:bg-indigo-50 border border-slate-200">
+                        <i class="fas fa-arrow-left text-slate-400 group-hover:text-indigo-600"></i>
+                    </div>
+                    <span class="hidden sm:inline font-semibold">Dashboard</span>
+                </a>
+                
+                <div class="h-6 w-px bg-slate-200 hidden md:block"></div>
+                
+                <div class="flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center shadow-md">
+                        <i class="fas fa-users text-white text-sm"></i>
+                    </div>
+                    <h1 class="text-lg font-bold text-slate-900">Evaluations List</h1>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <a href="/logout" class="text-slate-400 hover:text-red-600 text-sm font-medium transition-colors">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Wrapper for Sidebar + Content -->
+    <div class="flex-1 flex overflow-hidden relative">
+        
+        <!-- VERTICAL SIDEBAR -->
+        <aside id="filterSidebar" class="absolute top-0 left-0 h-full w-80 bg-white border-r border-slate-200 shadow-lg z-20 transition-transform duration-300 ease-in-out sidebar-closed flex flex-col">
+            
+            <!-- Sidebar Header -->
+            <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 flex-shrink-0">
+                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">
+                    <i class="fas fa-filter text-indigo-500 mr-2"></i>Filters & Actions
+                </h3>
+                <button onclick="toggleSidebar()" class="text-slate-400 hover:text-red-500 transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Sidebar Content (Scrollable) -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                
+                <!-- Upload Button -->
+                <a href="/evaluations/upload-excel" class="flex items-center justify-center w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg shadow-md transition border border-green-500">
+                    <i class="fas fa-file-excel mr-2"></i> Upload Evaluation Excel
+                </a>
+
+                <div class="border-t border-slate-200 pt-4">
+                    <!-- Filter Form -->
+                    <form action="/evaluations" method="GET" class="space-y-4">
+                        
+                        <!-- Ticket No -->
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ticket No</label>
+                            <input type="text" name="ticket_no" value="{{ filters.ticket_no or '' }}" placeholder="Search Ticket..." class="w-full border-slate-200 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+
+                        <!-- Semester -->
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Semester</label>
+                            <select name="semester" class="w-full border-slate-200 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500">
+                                <option value="">All</option>
+                                {% for sem in sem_numbers %}
+                                    <option value="{{ sem }}" {% if filters.semester == sem|string %}selected{% endif %}>Semester {{ sem }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Status -->
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Sem Status</label>
+                            <select name="status" class="w-full border-slate-200 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500">
+                                <option value="ongoing" {% if filters.status == 'ongoing' %}selected{% endif %}>Ongoing</option>
+                                <option value="completed" {% if filters.status == 'completed' %}selected{% endif %}>Completed</option>
+                                <option value="" {% if filters.status == '' %}selected{% endif %}>All</option>
+                            </select>
+                        </div>
+
+                        <!-- Year -->
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Batch Year</label>
+                            <select name="year" class="w-full border-slate-200 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500">
+                                <option value="">All</option>
+                                {% for year in filter_options.years %}
+                                    <option value="{{ year }}" {% if filters.year == year|string %}selected{% endif %}>{{ year }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Batch No -->
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Batch No</label>
+                            <select name="batch_no" class="w-full border-slate-200 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500">
+                                <option value="">All</option>
+                                {% for batch in filter_options.batch_nos %}
+                                    <option value="{{ batch }}" {% if filters.batch_no == batch|string %}selected{% endif %}>{{ batch }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Branch -->
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Branch</label>
+                            <select name="branch" class="w-full border-slate-200 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500">
+                                <option value="">All</option>
+                                {% for branch in filter_options.branches %}
+                                    <option value="{{ branch }}" {% if filters.branch == branch %}selected{% endif %}>{{ branch }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Department -->
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Department</label>
+                            <select name="department" class="w-full border-slate-200 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500">
+                                <option value="">All</option>
+                                {% for dept in filter_options.departments %}
+                                    <option value="{{ dept }}" {% if filters.department == dept %}selected{% endif %}>{{ dept }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Gender -->
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Gender</label>
+                            <select name="gender" class="w-full border-slate-200 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500">
+                                <option value="">All</option>
+                                {% for gender in genders %}
+                                    <option value="{{ gender }}" {% if filters.gender == gender %}selected{% endif %}>{{ gender }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Function -->
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Function</label>
+                            <select name="function" class="w-full border-slate-200 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500">
+                                <option value="">All</option>
+                                {% for func in filter_options.functions %}
+                                    <option value="{{ func }}" {% if filters.function == func %}selected{% endif %}>{{ func }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- BITS Stream -->
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">BITS Stream</label>
+                            <select name="bits_stream" class="w-full border-slate-200 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500">
+                                <option value="">All</option>
+                                {% for stream in filter_options.bits_streams %}
+                                    <option value="{{ stream }}" {% if filters.bits_stream == stream %}selected{% endif %}>{{ stream }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="pt-4 sticky bottom-0 bg-white pb-2 border-t border-slate-100">
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded font-bold text-xs shadow-sm transition">
+                                    <i class="fas fa-filter mr-1"></i> Apply
+                                </button>
+                                <a href="/evaluations" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded font-bold text-xs shadow-sm transition text-center">
+                                    <i class="fas fa-times mr-1"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Overlay -->
+        <div id="overlay" onclick="toggleSidebar()" class="absolute inset-0 bg-slate-900/20 z-10 hidden transition-opacity duration-300 opacity-0"></div>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-auto p-6 bg-slate-100">
+            <div class="max-w-full mx-auto">
+                <!-- Table Container -->
+                <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-slate-200">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-100">
+                            <thead class="bg-slate-50 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Student Profile</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Semester</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Location</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Department</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">BITS Stream</th>
+                                    <th class="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-3 py-3 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-amber-50">Training (20)</th>
+                                    <th class="px-3 py-3 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-purple-50">BITS CGPA (30)</th>
+                                    <th class="px-3 py-3 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-blue-50">OJT (50)</th>
+                                    <th class="px-3 py-3 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100">Total</th>
+                                    <th class="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-slate-100">
+                                {% for student in students %}
+                                <tr class="hover:bg-slate-50 transition-colors group">
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <div onclick='openStudentModal({{ student | tojson }})' class="flex items-center cursor-pointer group">
+                                            <div class="flex-shrink-0 h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-md group-hover:shadow-lg transition-shadow">
+                                                {{ student.employee_name[0]|upper }}
+                                            </div>
+                                            <div class="ml-3">
+                                                <div class="text-sm font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors">{{ student.employee_name }}</div>
+                                                <div class="text-[10px] text-slate-400 font-medium uppercase">{{ student.gender }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <div class="text-sm font-bold text-slate-800">Sem {{ student.semester or '-' }}</div>
+                                        <div class="text-[10px] text-slate-500 capitalize">{{ student.semester_status or 'N/A' }}</div>
+                                    </td>
+
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-slate-800">{{ student.plant_location or '-' }}</div>
+                                    </td>
+
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600 font-medium">{{ student.department or '-' }}</td>
+
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600 font-medium">{{ student.bits_stream or '-' }}</td>
+                                    
+                                    <!-- Status Column Logic -->
+                                    <td class="px-4 py-3 whitespace-nowrap text-center">
+                                        {% if student.student_status == 'dropped' %}
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-red-50 text-red-700 border border-red-100">
+                                                <i class="fas fa-ban mr-1 mt-0.5"></i> Dropped
+                                            </span>
+                                        {% elif student.student_status == 'completed' %}
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                                                <i class="fas fa-user-graduate mr-1 mt-0.5"></i> Completed
+                                            </span>
+                                        {% else %}
+                                            {% if student.semester_status == 'completed' %}
+                                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-green-50 text-green-700 border border-green-100">
+                                                    <i class="fas fa-check-circle mr-1 mt-0.5"></i> Sem Completed
+                                                </span>
+                                            {% elif student.semester_status == 'ongoing' %}
+                                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-yellow-50 text-yellow-700 border border-yellow-100">
+                                                    <i class="fas fa-spinner fa-spin mr-1 mt-0.5"></i> Ongoing
+                                                </span>
+                                            {% else %}
+                                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-slate-50 text-slate-500 border border-slate-100">
+                                                    <i class="fas fa-minus-circle mr-1 mt-0.5"></i> No Record
+                                                </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+
+                                    <td class="px-3 py-3 whitespace-nowrap text-center bg-amber-50/50 group-hover:bg-amber-50 transition-colors">
+                                        <span class="text-sm font-bold text-amber-700">{{ student.final_eval.training_total | round(1) }}</span>
+                                    </td>
+                                    <td class="px-3 py-3 whitespace-nowrap text-center bg-purple-50/50 group-hover:bg-purple-50 transition-colors">
+                                        <span class="text-sm font-bold text-purple-700">{{ student.final_eval.bits_total | round(2) }}</span>
+                                    </td>
+                                    <td class="px-3 py-3 whitespace-nowrap text-center bg-blue-50/50 group-hover:bg-blue-50 transition-colors">
+                                        <span class="text-sm font-bold text-blue-700">{{ student.final_eval.ojt_total | round(1) }}</span>
+                                    </td>
+                                    <td class="px-3 py-3 whitespace-nowrap text-center bg-slate-50 group-hover:bg-slate-100 transition-colors">
+                                        <span class="text-base font-extrabold text-slate-900">{{ student.final_eval.grand_total | round(1) }}</span>
+                                    </td>
+
+                                    <!-- Action Column Logic -->
+                                    <td class="px-4 py-3 whitespace-nowrap text-center">
+                                        {% if student.student_status == 'dropped' %}
+                                            <button disabled class="inline-flex items-center bg-red-100 text-red-700 px-4 py-1.5 rounded-md text-xs font-bold border border-red-200 cursor-not-allowed">
+                                                <i class="fas fa-ban mr-1.5"></i> Dropped
+                                            </button>
+                                        {% elif student.student_status == 'completed' %}
+                                             <button disabled class="inline-flex items-center bg-blue-100 text-blue-700 px-4 py-1.5 rounded-md text-xs font-bold border border-blue-200 cursor-not-allowed">
+                                                <i class="fas fa-check-circle mr-1.5"></i> Completed
+                                            </button>
+                                        {% else %}
+                                            <a href="/evaluations/{{ student.id }}{% if student.semester %}?semester={{ student.semester }}{% endif %}" 
+                                               class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-md text-xs font-bold shadow-sm transition">
+                                                <i class="fas fa-edit mr-1.5"></i> Evaluate
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="11" class="text-center py-10 text-slate-500">
+                                        <i class="fas fa-filter text-2xl mb-2 text-slate-300"></i>
+                                        <p>No records found matching your filters.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- STUDENT PROFILE MODAL -->
+    <div id="studentModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-60 transition-opacity" onclick="closeStudentModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full border border-slate-200">
+                
+                <!-- Header -->
+                <div class="bg-slate-800 px-6 py-5 flex justify-between items-center relative">
+                    <div class="flex items-center gap-4">
+                        <div id="modalAvatar" class="w-14 h-14 rounded-full bg-white text-slate-800 flex items-center justify-center font-bold text-xl shadow-lg border-4 border-white/20"></div>
+                        <div class="text-white text-left">
+                            <h3 class="text-xl font-bold leading-none" id="modal-title"></h3>
+                            <p id="modalSub" class="text-slate-300 text-xs mt-1 font-medium flex items-center gap-2"></p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeStudentModal()" class="text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition focus:outline-none">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Scrollable Body -->
+                <div class="max-h-[75vh] overflow-y-auto">
+                    <div class="px-6 py-6 bg-slate-50 border-t border-slate-200">
+                        
+                        <!-- CURRENT SEMESTER STATUS SECTION -->
+                        <div class="mb-6 p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                                        <i class="fas fa-graduation-cap text-indigo-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Viewing Context</p>
+                                        <h4 id="mSemHeader" class="text-lg font-bold text-slate-800">Semester -</h4>
+                                    </div>
+                                </div>
+                                <div id="mStatusBadge" class="flex items-center gap-2"></div>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500 flex items-center gap-2">
+                                <i class="fas fa-info-circle text-indigo-400"></i>
+                                <span>Current Active Status: <span id="mActiveStatus" class="font-bold text-slate-800">-</span></span>
+                            </div>
+                        </div>
+
+                        <!-- Grid Layout for Details -->
+                        <div class="space-y-6">
+                            <!-- Section 1: Personal Info -->
+                            <div class="border-b border-slate-200 pb-4">
+                                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <i class="fas fa-user-circle text-slate-400"></i> Personal Information
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-id-card mr-1 text-slate-300"></i> Ticket No</label>
+                                        <div id="mTicket" class="text-sm font-semibold text-slate-800"></div>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-venus-mars mr-1 text-slate-300"></i> Gender</label>
+                                        <div id="mGender" class="text-sm font-semibold text-slate-800 capitalize"></div>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-mobile-alt mr-1 text-slate-300"></i> Mobile</label>
+                                        <div id="mMobile" class="text-sm font-semibold text-slate-800"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Section 2: Placement Details -->
+                            <div class="border-b border-slate-200 pb-4">
+                                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <i class="fas fa-map-marker-alt text-slate-400"></i> Placement Details
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-industry mr-1 text-slate-300"></i> Plant Location</label>
+                                        <div id="mLocation" class="text-sm font-semibold text-slate-800"></div>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-calendar mr-1 text-slate-300"></i> Batch Year</label>
+                                        <div id="mYear" class="text-sm font-semibold text-slate-800"></div>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-hashtag mr-1 text-slate-300"></i> Batch No</label>
+                                        <div id="mBatch" class="text-sm font-semibold text-slate-800"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Section 3: Additional Details Grid -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-envelope mr-1"></i> Email</label>
+                                    <div id="mEmail" class="text-sm font-medium text-slate-800 truncate"></div>
+                                </div>
+                                <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-graduation-cap mr-1"></i> Diploma Branch</label>
+                                    <div id="mDiploma" class="text-sm font-medium text-slate-800"></div>
+                                </div>
+                                <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-building mr-1"></i> Department</label>
+                                    <div id="mDept" class="text-sm font-medium text-slate-800"></div>
+                                </div>
+                                <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-hashtag mr-1"></i> BC No</label>
+                                    <div id="mBc" class="text-sm font-medium text-slate-800"></div>
+                                </div>
+                                <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-cogs mr-1"></i> Function</label>
+                                    <div id="mFunction" class="text-sm font-medium text-slate-800"></div>
+                                </div>
+                                <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-user-tie mr-1"></i> Reporting Manager</label>
+                                    <div id="mManager" class="text-sm font-medium text-slate-800"></div>
+                                </div>
+                                <div class="bg-white p-3 rounded-lg shadow-xs border border-slate-100">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fas fa-stream mr-1"></i> BITS Stream</label>
+                                    <div id="mBitsStream" class="text-sm font-medium text-slate-800"></div>
+                                </div>
+                            </div>
+
+                            <!-- DOJ Section -->
+                            <div class="pt-4 border-t border-slate-200">
+                                <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100 inline-flex items-center gap-3">
+                                    <i class="fas fa-calendar-alt text-indigo-400"></i>
+                                    <div class="text-left">
+                                        <label class="block text-[10px] font-bold text-indigo-500 uppercase">Date of Joining</label>
+                                        <div id="mDoj" class="text-sm font-bold text-indigo-800"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle Sidebar Logic
+        function toggleSidebar() {
+            const sidebar = document.getElementById('filterSidebar');
+            const overlay = document.getElementById('overlay');
+            
+            if (sidebar.classList.contains('sidebar-closed')) {
+                // Open Sidebar
+                sidebar.classList.remove('sidebar-closed');
+                sidebar.classList.add('sidebar-open');
+                
+                // Show Overlay
+                overlay.classList.remove('hidden');
+                setTimeout(() => {
+                    overlay.classList.remove('opacity-0');
+                    overlay.classList.add('opacity-100');
+                }, 10);
+            } else {
+                // Close Sidebar
+                sidebar.classList.remove('sidebar-open');
+                sidebar.classList.add('sidebar-closed');
+                
+                // Hide Overlay
+                overlay.classList.remove('opacity-100');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        function openStudentModal(student) {
+            document.getElementById('modal-title').textContent = student.employee_name || 'N/A';
+            document.getElementById('modalAvatar').textContent = (student.employee_name || '?')[0].toUpperCase();
+            document.getElementById('modalSub').innerHTML = `
+                <span>${student.department || 'Unknown Dept'}</span> 
+                <span class="w-1 h-1 rounded-full bg-slate-500"></span> 
+                <span>${student.ticket_no || 'N/A'}</span>
+            `;
+
+            // Populate Fields
+            document.getElementById('mTicket').textContent = student.ticket_no || 'N/A';
+            document.getElementById('mGender').textContent = student.gender || 'N/A';
+            document.getElementById('mMobile').textContent = student.mobile_no || 'N/A';
+            document.getElementById('mEmail').textContent = student.email || 'N/A';
+            document.getElementById('mDiploma').textContent = student.diploma_branch || 'N/A';
+            document.getElementById('mDept').textContent = student.department || 'N/A';
+            document.getElementById('mBc').textContent = student.bc_no || 'N/A';
+            document.getElementById('mFunction').textContent = student.function || 'N/A';
+            document.getElementById('mManager').textContent = student.reporting_manager || 'N/A';
+            document.getElementById('mBitsStream').textContent = student.bits_stream || 'N/A';
+            
+            let doj = student.date_of_joining ? student.date_of_joining.split('T')[0] : 'N/A';
+            document.getElementById('mDoj').textContent = doj;
+            
+            document.getElementById('mLocation').textContent = student.plant_location || 'N/A';
+            document.getElementById('mYear').textContent = student.batch_year || 'N/A';
+            document.getElementById('mBatch').textContent = student.batch_no ? `Batch ${student.batch_no}` : 'N/A';
+
+            const semHeader = document.getElementById('mSemHeader');
+            const statusBadge = document.getElementById('mStatusBadge');
+            const activeStatusSpan = document.getElementById('mActiveStatus');
+            
+            semHeader.textContent = `Semester ${student.semester || '-'}`;
+            
+            let badgeHtml = '';
+            if(student.student_status === 'dropped') {
+                 badgeHtml = '<span class="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200 flex items-center gap-1"><i class="fas fa-ban"></i> Dropped</span>';
+                 activeStatusSpan.innerHTML = "Student Dropped";
+                 activeStatusSpan.className = "font-bold text-red-700";
+            } else if (student.student_status === 'completed') {
+                 badgeHtml = '<span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 flex items-center gap-1"><i class="fas fa-user-graduate"></i> Completed</span>';
+                 activeStatusSpan.innerHTML = "Academics Completed";
+                 activeStatusSpan.className = "font-bold text-blue-700";
+            } else {
+                if(student.semester_status === 'completed') {
+                    badgeHtml = '<span class="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200 flex items-center gap-1"><i class="fas fa-check-circle"></i> Sem Completed</span>';
+                } else if (student.semester_status === 'ongoing') {
+                    badgeHtml = '<span class="px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 flex items-center gap-1"><i class="fas fa-spinner fa-spin"></i> Ongoing</span>';
+                } else {
+                    badgeHtml = '<span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">No Status</span>';
+                }
+
+                if(student.active_semester) {
+                    activeStatusSpan.innerHTML = `Semester ${student.active_semester} (Ongoing)`;
+                    activeStatusSpan.className = "font-bold text-green-700";
+                } else {
+                    activeStatusSpan.innerHTML = "No Active Semester";
+                    activeStatusSpan.className = "font-bold text-slate-500";
+                }
+            }
+
+            statusBadge.innerHTML = badgeHtml;
+
+            document.getElementById('studentModal').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeStudentModal() {
+            document.getElementById('studentModal').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+    </script>
+</body>
+</html>
