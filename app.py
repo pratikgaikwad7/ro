@@ -10,6 +10,8 @@ from routes.admin import admin_bp
 from routes.evaluations import evaluations_bp
 from routes.user_dashboard import user_dashboard_bp
 
+from models.student_model import init_db
+
 load_dotenv()
 
 def create_app():
@@ -24,6 +26,14 @@ def create_app():
     app.register_blueprint(evaluations_bp)
     app.register_blueprint(user_dashboard_bp)
 
+    _db_initialized = False
+
+    @app.before_request
+    def initialize_db_once():
+        nonlocal _db_initialized
+        if not _db_initialized:
+            init_db()
+            _db_initialized = True
 
     return app
 
